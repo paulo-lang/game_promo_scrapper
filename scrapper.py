@@ -1,30 +1,34 @@
 from bs4 import BeautifulSoup
-import requests
+from requests_html import HTMLSession
 
 #with open('./pages_test/steam.html', encoding='utf-8') as page:
 #    soup = BeautifulSoup(page, 'html.parser')
 
-headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"}
-request = requests.get('https://store.steampowered.com/?l=portuguese', headers=headers)
-with open('steam_page.html', 'w', encoding='utf-8') as file:
-    file.write(request.text)
-soup = BeautifulSoup(request.text, 'html.parser')
+session = HTMLSession()
+url = 'https://store.steampowered.com/specials?offset=24'
+r = session.get(url)
 
-offersId = 'tab_specials_content'
-itemClass = 'tab_item'
+r.html.render(sleep=5, scrolldown=15)
+
+soup = BeautifulSoup(r.html.raw_html, 'html.parser')
+#with open('steam_page.html', 'w', encoding='utf-8') as file:
+#    file.write(request.text)
+offersId = 'SaleSection_13268'
+itemClass = 'ImpressionTrackedElement'
 
 offers = soup.find(id=offersId)
 offersProducts = offers.findAll(class_=itemClass)
-print(soup.find(string=''))
 products = []
 
 for product in offersProducts:
-    productId = product['data-ds-appid']
+    #productId = product['data-ds-appid']
 
-    productImage = product.find(class_='tab_item_cap_img')['src']
+    productImage = product.find('img')['src']
 
-    productTitle = product.find(class_='tab_item_name').text
-    productPriceInfo = product.find(class_='discount_block')
+    productInfo = product.div.div.div.find_next_sibling('div')
+
+    productTitle = productInfo.div.find_next_sibling('div').text
+    productPriceInfo = productInfo.div.find_next_sibling('div').find_next_sibling('div').find_next_sibling('div').find_next_sibling('div').div
 
     isProductFree = product.find(string='Grátis para Jogar')
     productPrice = 0
@@ -35,13 +39,13 @@ for product in offersProducts:
         isProductFree = True
     else:
         isProductFree = False
-        productPrice = productPriceInfo.find(class_='discount_final_price').text
+        productPrice = productPriceInfo.div.find_next_sibling('div').div.find_next_sibling('div').div.find_next_sibling('div').text
         productPrice = float(productPrice.replace('R$', '').replace(',', '.'))
-        productHasLastPrice = productPriceInfo.find(class_='discount_original_price')
+        productHasLastPrice = productPriceInfo.div.find_next_sibling('div').div.find_next_sibling('div').div
         if productHasLastPrice:
             productLastPrice = productHasLastPrice.text
             productLastPrice = float(productLastPrice.replace('R$', '').replace(',', '.'))
-            productDiscount = productPriceInfo.find(class_='discount_pct').text
+            productDiscount = productPriceInfo.div.find_next_sibling('div').div.text
             productDiscount = int(productDiscount.replace('%', '').replace('-', ''))
         else:
             productLastPrice = productPrice
@@ -58,4 +62,4 @@ for product in offersProducts:
     products.append(product)
 
 
-#print(products)
+print(products)
