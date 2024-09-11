@@ -11,12 +11,19 @@ r = session.get(url)
 r.html.render(sleep=5, scrolldown=15)
 
 soup = BeautifulSoup(r.html.raw_html, 'html.parser')
-#with open('steam_page.html', 'w', encoding='utf-8') as file:
-#    file.write(request.text)
 offersId = 'SaleSection_13268'
 itemClass = 'ImpressionTrackedElement'
 
 offers = soup.find(id=offersId)
+
+with open('offers.txt', 'r+', encoding='utf-8') as file:
+    if(file.read() == offers):
+        print('No new offers')
+        exit()
+
+    file.seek(0)
+    file.write(offers)
+
 offersProducts = offers.findAll(class_=itemClass)
 products = []
 
